@@ -1,0 +1,15 @@
+rm(list = ls())
+?arima.sim()
+data1 = arima.sim(n = 5000,list(ar = c(0.9), ma = c(0.5)), rand.gen = rnorm)
+par(mfrow = c(3,2))
+plot(data1, main = 'ARMA(1,1) model')
+acf(data1, lag.max = 50)
+pacf(data1, lag.max = 50)
+
+data2 = arima.sim(n = 5000,list(ar = c(0.5), ma = c(0.6, 0.2)), rand.gen = rnorm)
+#par(mfrow = c(2,2))
+plot(data2, main = 'ARMA(1,2) model')
+acf(data2, lag.max = 50)
+pacf(data2, lag.max = 50)
+acf(co2, lag.max = 1000)
+
