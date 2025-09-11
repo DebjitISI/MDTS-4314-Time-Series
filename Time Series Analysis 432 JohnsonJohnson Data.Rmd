@@ -1,0 +1,631 @@
+---
+title: "Time Series Analysis [JohnsonJohnson Data]"
+author: "Arkadyuti Paul [432]"
+date: "19/07/2025"
+output: word_document
+---
+```{r}
+```
+
+
+```{r}
+```
+
+Data description:
+Here we have a Quarterly time series data which contains earnings (dollars) per Johnson & Johnson share from year 1960 to 1980.
+```{r}
+JohnsonJohnson
+```
+Objective:
+Our objective is to observe the time series data and fit 
+Observations: 
+
+```{r}
+plot(JohnsonJohnson, xlab = "Year", main = "JohnsonJohnson data")
+```
+
+
+We will take moving average to eliminate the seasonal fluctuation
+```{r}
+#install.packages("forecast")
+library(forecast)
+moving_average = ma(JohnsonJohnson,order = 4);moving_average
+plot(moving_average, main = "Moving average over Year", ylab = "Moving Average", xlab = "Year")
+```
+Dtrending the original series
+```{r}
+dtrended_data = JohnsonJohnson / moving_average ; dtrended_data
+plot(dtrended_data, main = "Dtrended data over Year", xlab = "Year", ylab = "Dtrended Data ")
+```
+Obtaining seasonality index
+```{r}
+unadjusted_seasonality_index = tapply(na.omit(dtrended_data),cycle(na.omit(dtrended_data)),FUN = mean) ; unadjusted_seasonality_index
+adjusted_seasonality_index = unadjusted_seasonality_index / mean(unadjusted_seasonality_index) ; adjusted_seasonality_index
+plot(adjusted_seasonality_index, type = 'l', main = "Seasonality index over Quarter", xlab = "Quarter", ylab = "Seasonality Index")
+```
+Dseasonalize the dtrended data
+```{r}
+dtrended_data[is.na(dtrended_data)] = 0
+dtrended_dseasonalized_data = dtrended_data /  rep(adjusted_seasonality_index, length.out = length(dtrended_data)) ; dtrended_dseasonalized_data
+```
+Ploting the dtrended dseasonalized data
+```{r}
+plot(dtrended_dseasonalized_data, main = "Irregularities over year", ylab = "Dtrended dseasonalized data", xlab = "Year")
+```
+
+
+
+
+
+
+# Step1: We will take yearly average to eliminate the seasonal fluctuation
+```{r}
+estimated_trend = aggregate(JohnsonJohnson, nfrequency = 1, FUN = mean);estimated_trend
+```
+
+#Step2: Plotting yearly average against time and fitting a approximate yearly trend equation
+```{r}
+plot(estimated_trend, type='l', main = "Trend Estimate VS Time", xlab = "Year", ylab = "Trend Estimate")
+time_point = 1:21   
+fitted_model_1 = lm(estimated_trend ~ time_point)
+summary(fitted_model_1)
+year_point = 1960 : 1980
+plot(estimated_trend, type = 'l', main = "Fitted yearly trend estimate", xlab = "Year", ylab = "Trend Estimate")
+lines(year_point, fitted(fitted_model_1), type = 'l', col = 'red')
+```
+
+
+# Step3: Convert the yearly trend equation to monthly trend equation
+```{r}
+quarter_point = 6 : 89
+quarterly_estimate = function(x){
+  fitted_model_1$coefficients[1] + fitted_model_1$coefficients[2] * (x + 1/2) / 4
+}
+quarterly_estimate(quarter_point)
+plot(quarter_point,JohnsonJohnson,type = 'l', main = "Fitted quarterly trend estimate", xlab = "Quarter")
+lines(quarter_point,quarterly_estimate(quarter_point),type = 'l', col = 'red')
+```
+
+
+# Step4:Dtrending the original series by taking ratio Xt/Tt
+```{r}
+dtrended_data_1 = JohnsonJohnson / quarterly_estimate(quarter_point); dtrended_data_1
+plot(dtrended_data_1, xlab = "Year", ylab = "Dtrended data", main = "Dtrended data over year")
+```
+
+
+# Step5: Obtaining adjusted seasonal index from the dtrended data 
+```{r}
+unadjusted_seasonality_index = tapply(dtrended_data_1, cycle(dtrended_data_1), mean) ; unadjusted_seasonality_index
+adjusted_seasonality_index = unadjusted_seasonality_index / mean(unadjusted_seasonality_index) ; adjusted_seasonality_index
+plot(adjusted_seasonality_index, type = 'l', main = "Seasonality index over Quarter", xlab = "Quarter", ylab = "Seasonality Index")
+```
+
+
+# Step6: Obtaining the dtrended dseasonalized data from dividing dtrended data by adjusted seasonality index
+```{r}
+dtrended_dseasonalized_data_1 = dtrended_data_1 / rep(adjusted_seasonality_index, length.out = length(dtrended_data_1));dtrended_dseasonalized_data_1
+```
+
+
+# Step7: Plotting this dtrended dseasonalized data 
+```{r}
+plot(dtrended_dseasonalized_data_1, main = "Irregularities over year", xlab = "Year", ylab = "Dtrended dseasonalized data")
+```
+
+
+###### For quadratic model ######
+
+
+# Step1: We will take yearly average to eliminate the seasonal fluctuation
+```{r}
+estimated_trend = aggregate(JohnsonJohnson, nfrequency = 1, FUN = mean);estimated_trend
+```
+
+#Step2: Plotting yearly average against time and fitting a approximate yearly trend equation
+```{r}
+plot(estimated_trend, type='l', main = "Trend Estimate VS Time", xlab = "Year", ylab = "Trend Estimate")
+time_point = 1:21   
+fitted_model_2 = lm(estimated_trend ~ time_point + I(time_point^2))
+summary(fitted_model_2)
+year_point = 1960 : 1980
+plot(estimated_trend, type = 'l', main = "Fitted yearly trend estimate", xlab = "Year", ylab = "Trend Estimate")
+lines(year_point, fitted(fitted_model_2), type = 'l', col = 'red')
+```
+
+
+# Step3: Convert the yearly trend equation to quarterly trend equation
+```{r}
+quarter_point = 6 : 89
+quarterly_estimate = function(x){
+  fitted_model_2$coefficients[1] + fitted_model_2$coefficients[2] * (x + 1/2) / 4 + fitted_model_2$coefficients[3] * ((x + 1/2) / 4)^2
+}
+quarterly_estimate(quarter_point)
+plot(quarter_point, JohnsonJohnson, type = 'l', main = "Fitted quarterly trend estimate", xlab = "Quarter")
+lines(quarter_point, quarterly_estimate(quarter_point), type = 'l', col = 'red')
+```
+
+
+# Step4:Dtrending the original series by taking ratio Xt/Tt
+```{r}
+dtrended_data_2 = JohnsonJohnson / quarterly_estimate(quarter_point); dtrended_data_2
+plot(dtrended_data_2, xlab = "Year", ylab = "Dtrended data", main = "Dtrended data over year")
+```
+
+
+# Step5: Obtaining adjusted seasonal index from the dtrended data 
+```{r}
+unadjusted_seasonality_index = tapply(dtrended_data_2, cycle(dtrended_data_2), mean) ; unadjusted_seasonality_index
+adjusted_seasonality_index = unadjusted_seasonality_index / mean(unadjusted_seasonality_index) ; adjusted_seasonality_index
+plot(adjusted_seasonality_index, type = 'l', main = "Seasonality index over Quarter", xlab = "Quarter", ylab = "Seasonality Index")
+```
+
+
+# Step6: Obtaining the dtrended dseasonalized data from dividing dtrended data by adjusted seasonality index
+```{r}
+dtrended_dseasonalized_data_2 = dtrended_data_2 / rep(adjusted_seasonality_index, length.out = length(dtrended_data_2));dtrended_dseasonalized_data_2
+```
+
+
+# Step7: Plotting this dtrended dseasonalized data 
+```{r}
+plot(dtrended_dseasonalized_data_2, main = "Irregularities over year", xlab = "Year", ylab = "Dtrended dseasonalized data")
+```
+
+```{r}
+CO2
+differences=diff(co2,differences = 2)
+plot(differences)
+
+differences2=diff(co2,lag= 12)
+plot(differences2)
+
+detrend= diff(co2)
+deseasonalize= diff(detrend, lag=12)
+plot(deseasonalize)
+
+```
+
+```{r}
+differences1=diff(AirPassengers)
+plot(differences1)
+
+detrend_air= diff(AirPassengers, differences = 2)
+deseasonalize_air= diff(detrend_air, lag=12)
+plot(deseasonalize_air)
+
+log_detrend_air= diff(log(AirPassengers), differences = 2)
+log_deseasonalize_air= diff(log_detrend_air, lag=12)
+plot(log_deseasonalize_air)
+```
+```{r}
+plot(log(JohnsonJohnson))
+log_detrend_Johnson= diff(log(JohnsonJohnson), differences = 2)
+log_deseasonalize_Johnson= diff(log_detrend_Johnson, lag=12)
+plot(log_deseasonalize_Johnson)
+```
+```{r}
+#set.seed(1234)
+W= rnorm(1000,0,2)
+plot(W, type= "l")
+Cor= acf(W,lag.max = 50)
+Cor
+plot(Cor,ci=0.99)
+```
+```{r}
+Q= matrix(c(3,0,1,0,3,1,1,1,2),nrow= 3, byrow= TRUE)
+eigen(Q)
+d0= c(1,0,0)
+Q%*%d0
+
+```
+```{r}
+WN= rnorm(1000)
+plot(WN,type =  "l")
+
+xt= array(0)
+
+for(i in 5:length(WN))
+{
+  xt[i-4]= (WN[i]+WN[i-1]+WN[i-2]+WN[i-3]+WN[i-4])/5
+}
+
+plot(xt,type= "l")
+
+acf(WN)
+acf(xt)
+xt_filter= filter(WN,filter= rep(1/5,5),sides = 1)
+xt_filter= na.omit(xt_filter)
+```
+```{r}
+                                                                                       
+
+sma_ma= ma(white_noise,order = 3)
+sma_ma= na.omit(sma_ma)
+acf(sma_ma)
+```
+
+```{r}
+w= rnorm(1000)
+xt_ar= filter(w, filter = -0.8, method = "recursive",init = rnorm(1))
+
+acf(xt_ar, lag.max = 50)
+pacf(xt_ar, lag.max = 50)
+
+w[1]
+xt_ar[1]
+
+xt_ar2= filter(w, filter = c(1,-0.8), method = "recursive",init = rnorm(2))
+acf(xt_ar2, lag.max = 50)
+pacf(xt_ar2, lag.max = 50)
+```
+```{r}
+set.seed(123)
+white_noise= rnorm(500)
+delta1=0.5
+delta2= 0
+delta3= -0.5
+xt1=array(0)
+xt2=array(0)
+xt3=array(0)
+
+xt1[1]=delta1+ white_nose[1]
+xt2[1]=delta2+ white_nose[1]
+xt3[1]=delta3+ white_nose[1]
+
+for (i in 2:500)
+{
+  xt1[i]= delta1 + xt1[i-1]+ white_noise[i]
+  xt2[i]= delta2 + xt2[i-1]+ white_noise[i]
+  xt3[i]= delta3 + xt3[i-1]+ white_noise[i]
+}
+
+plot(xt1,type= "l", col= "blue", ylim= c(-250,250))
+lines(xt2, type = "l", col= "green")
+lines(xt3, type = "l", col= "red")
+```
+```{r}
+acf(co2,lag.max = 100)
+pacf(co2, lag.max = 100)
+
+acf(AirPassengers,lag.max = 100)
+pacf(AirPassengers, lag.max = 100)
+```
+
+```{r}
+WN= rnorm(1000)
+sma2= filter(WN,filter= rep(1/3,3),sides = 1)
+sma2= na.omit(xt_filter)
+ar2= filter(WN, filter = c(1,-0.8), method = "recursive",init = rnorm(2))
+ar1= filter(WN, filter = 1, method = "recursive",init = rnorm(1))
+
+acf(sma2,lag.max= 50, main= "Simple Moving average of order 2")
+acf(ar1,lag.max=349, main= "AR(1) Process")                                                                        
+```
+```{r}
+coefficients <- c(1, 0.9, -0.06)  # Coefficients in increasing order: constant, x, x^2, x^3
+roots <- polyroot(coefficients)
+print(abs(roots))
+```
+```{r}
+xt_arima= arima.sim(n=5000, list(ar= 0.5, ma=c(1,0.6,0.2)), sd= sqrt(2))
+ts.plot(xt_arima)
+acf(xt_arima, lag.max= 100)
+pacf(xt_arima, lag.max= 100)
+```
+```{r}
+acf(co2,lag.max = 100)
+pacf(co2,lag.max = 100)
+plot(log(AirPassengers))
+Data= log(AirPassengers)
+plot(diff(Data))
+acf(diff(Data),lag.max = 100)
+
+data=diff(gnp,differences = 1)
+plot(data)
+acf(data, lag.max = 100)
+pacf(data,lag.max = 100)
+
+acf(diff(AirPassengers), lag.max= 100)
+```
+
+```{r}
+plot(log(gnp))
+acf(log(gnp),lag.max = 100)
+pacf(log(gnp),lag.max = 100)
+data1 = diff(log(gnp),differences = 1)
+plot(data1)
+acf(data1,lag.max = 100)
+pacf(data1,lag.max = 100)
+adf.test(data1)
+```
+```{r}
+model1 = arima(log(gnp), order= c(0,1,1));model1
+model2= arima(log(gnp), order= c(0,1,2));model2
+model3= arima(log(gnp), order= c(1,1,0));model3
+model4= arima(log(gnp), order= c(1,1,1));model4
+
+
+aics= model1$aic
+aics= c(aics, model2$aic)
+aics= c(aics, model3$aic)
+aics= c(aics, model4$aic)
+model= c("model 1","model 2","model 3","model 4")
+aics
+table = data.frame(Models = model, AIC = aics); table
+
+residual1=model1$residuals
+residual2=model2$residuals
+residual3=model3$residuals
+residual4=model4$residuals
+
+par(mfrow= c(2,2))
+acf(residual1)
+acf(residual2)
+acf(residual3)
+acf(residual4)
+
+```
+
+```{r}
+library(astsa)
+data = cardox
+index = c(1:floor(0.7*length(data)))
+train = data[index]
+test = data[-index]
+length(train)
+length(test)
+
+plot(data)
+plot(train,type = 'l')
+
+acf(train,lag.max = 100)
+pacf(train,lag.max = 100)
+
+plot(diff(train,differences = 3),type = 'l')
+
+acf(diff(train,differences = 3),lag.max = 100)
+pacf(diff(train,differences = 3),lag.max = 100)
+
+a3 = arima(train,c(1,1,0))
+a4 = arima(train,c(2,1,0))
+
+acf(a3$residuals,lag.max = 100)
+acf(a4$residuals)
+
+#choice for 2nd diff q = 0,1 p = 12 d = 2
+#choice for 3rd diff q = 0,1 p = 12 d = 3
+model1 = arima(train,c(12,1,1),method = 'ML',optim.control = list(maxit=1500));model1
+model2 = arima(train,c(12,2,1),method = 'ML',optim.control = list(maxit=1500));model2
+model3 = arima(train,c(12,3,1),method = 'ML',optim.control = list(maxit=1500));model3
+model4 = arima(train,c(12,2,2),method = 'ML',optim.control = list(maxit=1500));modle4
+
+
+
+par(mfrow = c(1,2))
+forecast1 = forecast::forecast(model1,h=length(test))
+forecast2= forecast::forecast(model2,h=length(test))
+forecast3= forecast::forecast(model3,h=length(test))
+forecast4= forecast::forecast(model4,h=length(test))
+
+plot(forecast1)
+point_forecast1 = as.numeric(forecast1$mean)
+plot(point_forecast1,type = 'l',ylim = c(360,450))
+lines(test,col = 'red')
+
+
+plot(forecast2)
+point_forecast2 = as.numeric(forecast2$mean)
+plot(point_forecast2,type = 'l',ylim = c(360,450))
+lines(test,col = 'red')
+
+plot(forecast3)
+point_forecast3 = as.numeric(forecast3$mean)
+plot(point_forecast3,type = 'l',ylim = c(360,450))
+lines(test,col = 'red')
+
+plot(forecast4)
+point_forecast4 = as.numeric(forecast4$mean)
+plot(point_forecast4,type = 'l',ylim = c(360,450))
+lines(test,col = 'red')
+
+rmse1= sqrt(mean((point_forecast1-test)^2));rmse1
+rmse2= sqrt(mean((point_forecast2-test)^2));rmse2
+rmse3= sqrt(mean((point_forecast3-test)^2));rmse3
+rmse4= sqrt(mean((point_forecast4-test)^2));rmse1
+models= c("ARIMA(12,1,1)","ARIMA(12,2,1)","ARIMA(12,3,1)","ARIMA(12,2,2)")
+aics= c(model1$aic,model2$aic,model3$aic,model4$aic)
+rmses= c(rmse1,rmse2,rmse3,rmse4)
+table= data.frame(Models= models, AIC= aics, RMSE= rmses);table
+
+# Box.test(res2,lag=22, type= "Ljung-Box", fitdf = 13)
+
+checkresiduals(model1, lag= 20)
+checkresiduals(model2, lag= 20)
+checkresiduals(model3, lag= 20)
+checkresiduals(model4, lag= 20)
+
+
+
+```
+
+
+
+```{r}
+Data = read.csv("C:\\Users\\DS-31\\Downloads\\data (2).csv")
+Sales_ts = ts(Data$Sales, start = c(2000, 1), frequency = 12)
+
+index = 1:floor(0.8 * length(Sales_ts))
+train = Sales_ts[index]
+test = Sales_ts[-index]
+
+plot(train, type = 'l', main = "Training Sales Data")
+acf(train,lag.max = 100)
+pacf(train,lag.max = 100)
+
+plot(diff(train,differences = 2),type = 'l')
+acf(diff(train,differences = 2),lag.max = 100)
+pacf(diff(train,differences = 2),lag.max = 100)
+
+
+#choice for 2nd diff q = 0,1 p = 0,1,2 d = 2
+model1 = arima(train,c(0,2,0),method = 'ML',optim.control = list(maxit=1500))
+model2 = arima(train,c(0,2,1),method = 'ML',optim.control = list(maxit=1500))
+model3 = arima(train,c(1,2,0),method = 'ML',optim.control = list(maxit=1500))
+model4 = arima(train,c(1,2,1),method = 'ML',optim.control = list(maxit=1500))
+model5 = arima(train,c(2,2,0),method = 'ML',optim.control = list(maxit=1500))
+model6 = arima(train,c(2,2,1),method = 'ML',optim.control = list(maxit=1500))
+
+
+
+
+forecast1 = forecast::forecast(model1,h=length(test))
+forecast2= forecast::forecast(model2,h=length(test))
+forecast3= forecast::forecast(model3,h=length(test))
+forecast4= forecast::forecast(model4,h=length(test))
+forecast5= forecast::forecast(model4,h=length(test))
+forecast6= forecast::forecast(model4,h=length(test))
+
+par(mfrow = c(1,2))
+plot(forecast1)
+point_forecast1 = as.numeric(forecast1$mean)
+plot(point_forecast1,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+
+plot(forecast2)
+point_forecast2 = as.numeric(forecast2$mean)
+plot(point_forecast2,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast3)
+point_forecast3 = as.numeric(forecast3$mean)
+plot(point_forecast3,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast4)
+point_forecast4 = as.numeric(forecast4$mean)
+plot(point_forecast4,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast5)
+point_forecast5 = as.numeric(forecast5$mean)
+plot(point_forecast5,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast6)
+point_forecast6 = as.numeric(forecast6$mean)
+plot(point_forecast6,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+rmse1= sqrt(mean((point_forecast1-test)^2))
+rmse2= sqrt(mean((point_forecast2-test)^2))
+rmse3= sqrt(mean((point_forecast3-test)^2))
+rmse4= sqrt(mean((point_forecast4-test)^2))
+rmse5= sqrt(mean((point_forecast5-test)^2))
+rmse6= sqrt(mean((point_forecast6-test)^2))
+
+models= c("ARIMA(0,2,0)","ARIMA(0,2,1)","ARIMA(1,2,0)","ARIMA(1,2,1)","ARIMA(2,2,0)","ARIMA(2,2,1)")
+aics= c(model1$aic,model2$aic,model3$aic,model4$aic,model5$aic,model6$aic)
+rmses= c(rmse1,rmse2,rmse3,rmse4,rmse5,rmse6)
+table= data.frame(Models= models, AIC= aics, RMSE= rmses);table
+
+
+checkresiduals(model1, lag= 20)
+checkresiduals(model2, lag= 20)
+checkresiduals(model3, lag= 20)
+checkresiduals(model4, lag= 20)
+checkresiduals(model5, lag= 20)
+checkresiduals(model6, lag= 20)
+```
+
+```{r}
+auto.arima(train)
+```
+
+```{r}
+GNP= log(gnp)
+index = 1:floor(0.8 * length(GNP))
+train = GNP[index]
+test = GNP[-index]
+
+plot(train, type = 'l', main = "Training Sales Data")
+acf(train,lag.max = 100)
+pacf(train,lag.max = 100)
+
+plot(diff(train,differences = 1),type = 'l')
+acf(diff(train,differences = 1),lag.max = 100)
+pacf(diff(train,differences = 1),lag.max = 100)
+
+
+#choice for 2nd diff  p = 0,1 q = 0,1,2 d = 1
+model1 = arima(train,c(0,1,0),method = 'ML',optim.control = list(maxit=1500))
+model2 = arima(train,c(0,1,1),method = 'ML',optim.control = list(maxit=1500))
+model3 = arima(train,c(0,1,2),method = 'ML',optim.control = list(maxit=1500))
+model4 = arima(train,c(1,1,0),method = 'ML',optim.control = list(maxit=1500))
+model5 = arima(train,c(1,1,1),method = 'ML',optim.control = list(maxit=1500))
+model6 = arima(train,c(1,1,2),method = 'ML',optim.control = list(maxit=1500))
+
+
+
+
+forecast1 = forecast::forecast(model1,h=length(test))
+forecast2= forecast::forecast(model2,h=length(test))
+forecast3= forecast::forecast(model3,h=length(test))
+forecast4= forecast::forecast(model4,h=length(test))
+forecast5= forecast::forecast(model4,h=length(test))
+forecast6= forecast::forecast(model4,h=length(test))
+
+par(mfrow = c(1,2))
+plot(forecast1)
+point_forecast1 = as.numeric(forecast1$mean)
+plot(point_forecast1,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+
+plot(forecast2)
+point_forecast2 = as.numeric(forecast2$mean)
+plot(point_forecast2,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast3)
+point_forecast3 = as.numeric(forecast3$mean)
+plot(point_forecast3,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast4)
+point_forecast4 = as.numeric(forecast4$mean)
+plot(point_forecast4,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast5)
+point_forecast5 = as.numeric(forecast5$mean)
+plot(point_forecast5,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+plot(forecast6)
+point_forecast6 = as.numeric(forecast6$mean)
+plot(point_forecast6,type = 'l',ylim = c(5000,10000))
+lines(test,col = 'red')
+
+rmse1= sqrt(mean((point_forecast1-test)^2))
+rmse2= sqrt(mean((point_forecast2-test)^2))
+rmse3= sqrt(mean((point_forecast3-test)^2))
+rmse4= sqrt(mean((point_forecast4-test)^2))
+rmse5= sqrt(mean((point_forecast5-test)^2))
+rmse6= sqrt(mean((point_forecast6-test)^2))
+
+models= c("ARIMA(0,1,0)","ARIMA(0,1,1)","ARIMA(0,1,2)","ARIMA(1,1,0))","ARIMA(1,1,1)","ARIMA(1,1,2)")
+aics= c(model1$aic,model2$aic,model3$aic,model4$aic,model5$aic,model6$aic)
+rmses= c(rmse1,rmse2,rmse3,rmse4,rmse5,rmse6)
+table= data.frame(Models= models, AIC= aics, RMSE= rmses);table
+
+
+checkresiduals(model1, lag= 20)
+checkresiduals(model2, lag= 20)
+checkresiduals(model3, lag= 20)
+checkresiduals(model4, lag= 20)
+checkresiduals(model5, lag= 20)
+checkresiduals(model6, lag= 20)
+```
+
