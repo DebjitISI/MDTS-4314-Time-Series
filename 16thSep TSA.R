@@ -31,8 +31,11 @@ acf2(res^2,max.lag = 50)
 
 
 library(fGarch)
-model2 = garchFit(~arma(1,0)+garch(2,0),data$data,trace = F)
+#we get the predicted values of variability i.e. sigma^2 by:
+u2 = garchFit(~arma(1,0)+garch(2,0),data$data,trace = F)@sigma.t
 #...............~to fit the mean + to dit the volatility(i.e. variance)
-summary(model2)# omega is alpha_0
-model3 = garchFit(~arma(1,0)+garch(1,0),data$data,trace = F)
-summary(model3)
+summary(u2)# omega is alpha_0
+u3 = garchFit(~arma(1,0)+garch(1,0),data$data,trace = F)@sigma.t
+summary(u3)
+?sigma
+sigma(garchFit(~arma(1,0)+garch(2,0),data$data,trace = F))
