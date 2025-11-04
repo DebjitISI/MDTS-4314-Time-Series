@@ -8,12 +8,20 @@ df <- data.frame(
   Alpha = alpha
 )
 m=c()
+f=c()
 for (a in alpha) {
-  paste("For alpha:",a)
-  fit=HoltWinters(data,alpha=a,beta = F,gamma = F)
-  forecast = forecast::forecast(fit,length=1)
-  pred = as.numeric(forecast$mean)
-  m = c(m,fit$SSE)
+  model=HoltWinters(data,alpha=a,beta = F,gamma = F)
+  forecast = forecast::forecast(model,h=1)
+  f = c(f,as.numeric(forecast$mean))
+  m = c(m,model$SSE)#This is the training error
 }
-df$mse=m
+df$SSE=m
+df$Forecast=f
 df
+alpha = df$Alpha[df$SSE==min(df$SSE)];alpha
+model=HoltWinters(data,alpha=0.1,beta = F,gamma = F)
+forecast = forecast::forecast(model,h=1)
+plot(forecast)
+
+opt_model = HoltWinters(data,beta = F,gamma = F)#without using specified value of alpha we ge the optimal value
+opt_alpha = opt_model$alpha;opt_alpha
